@@ -18,3 +18,11 @@ class ChangeBrawlerEvent extends ChatEvent {
   final BrawlerModel newBrawler;
   ChangeBrawlerEvent(this.newBrawler);
 }
+
+class RefreshGlobalTrophiesEvent extends ChatEvent {
+  // Opcional: Si desde Showdown ya tienes el entero con las copas ganadas, 
+  // se lo puedes pasar directamente aquí para ahorrarte una petición HTTP.
+  final int? updatedTrophies;
+
+  RefreshGlobalTrophiesEvent({this.updatedTrophies});
+}

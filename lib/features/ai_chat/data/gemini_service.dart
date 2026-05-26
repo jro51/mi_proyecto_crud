@@ -3,6 +3,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mi_proyecto_crud/features/ai_chat/data/models/chat_message_model.dart';
 import 'package:mi_proyecto_crud/features/ai_chat/domain/repositories/chat_repository.dart';
+import 'package:mi_proyecto_crud/features/profile/data/models/user_model.dart';
 
 class GeminiService implements ChatRepository {
   late final GenerativeModel _model;
@@ -51,7 +52,7 @@ class GeminiService implements ChatRepository {
     );
 
     _model = GenerativeModel(
-      model: 'gemini-3-flash-preview', 
+      model: 'gemini-3.5-flash', 
       apiKey: apiKey,
       systemInstruction: systemPrompt,
     );
@@ -118,5 +119,11 @@ class GeminiService implements ChatRepository {
     } catch (e) {
       throw Exception('Error al comunicarse con Gemini: $e');
     }
+  }
+
+  @override
+  Future<UserModel> getUserProfile() {
+    // TODO: implement getUserProfile
+    throw UnimplementedError();
   }
 }

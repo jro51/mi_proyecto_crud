@@ -31,11 +31,6 @@ dependencies:
   # --- VARIABLES DE ENTORNO ---
   flutter_dotenv: ^5.1.0        # Para leer tu API Key de forma segura
 
-  # --- SERVICIOS DE FIREBASE ---
-  firebase_core: ^3.0.0
-  firebase_auth: ^5.0.0
-  cloud_firestore: ^5.0.0
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

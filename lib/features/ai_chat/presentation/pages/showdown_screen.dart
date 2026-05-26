@@ -328,10 +328,14 @@ class _ShowdownScreenState extends State<ShowdownScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             onPressed: () {
-              // Regresar al Lobby / Menú principal
-              Navigator.pop(context);
+              // 🌟 REGRESAMOS ENVIANDO EL RESULTADO REAL COMO STRING
+              int puntajeFinal = isVictory ? 15 : -5;
+              Navigator.pop(context, puntajeFinal);
             },
-            child: const Text("VOLVER AL MENÚ", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+            child: const Text(
+              "VOLVER AL MENÚ", 
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)
+            ),
           ),
         ],
       ),

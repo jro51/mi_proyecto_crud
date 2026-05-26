@@ -1,194 +1,429 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mi_proyecto_crud/features/ai_chat/presentation/bloc/chat_event.dart';
 import 'package:mi_proyecto_crud/features/ai_chat/presentation/bloc/showdown/showdown_bloc.dart';
 import 'package:mi_proyecto_crud/features/ai_chat/presentation/bloc/showdown/showdown_event.dart';
 import 'package:mi_proyecto_crud/features/ai_chat/presentation/pages/showdown_screen.dart';
+import 'package:mi_proyecto_crud/features/profile/data/brawler_repository.dart';
 import '../bloc/chat_bloc.dart';
 import '../bloc/chat_state.dart';
 import 'chat_screen.dart';
 import '../../../profile/presentation/pages/brawler_selection_screen.dart';
 
-class MainMenuScreen extends StatelessWidget {
+class MainMenuScreen extends StatefulWidget {
   const MainMenuScreen({super.key});
 
   @override
+  State<MainMenuScreen> createState() => _MainMenuScreenState();
+}
+
+class _MainMenuScreenState extends State<MainMenuScreen> {
+  // Índice actual para controlar qué sección está seleccionada
+  int _currentIndex = 0;
+
+  @override
   Widget build(BuildContext context) {
+    // Sincronización con el backend de Spring Boot
+    context.read<ChatBloc>().add(RefreshGlobalTrophiesEvent());
+
+    // Color base: Celeste que tira para azul (idéntico al nuevo diseño del PDF)
+    const Color celesteBlue = Color.fromARGB(255, 83, 149, 247);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1117),
+      backgroundColor: const Color(0xFF060910), // Fondo azul oscuro profundo
       appBar: AppBar(
-        backgroundColor: const Color(0xFF161B22),
+        backgroundColor: const Color(0xFF060910),
         elevation: 0,
-        title: const Text(
-          "BRAWL ACADEMY",
-          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5, color: Colors.white),
+        title: const Row(
+          children: [
+            Icon(Icons.gavel_rounded, color: celesteBlue, size: 20),
+            SizedBox(width: 8),
+            Text(
+              "BRAWL ACADEMY",
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900, // Letra más ancha/gruesa
+                letterSpacing: 3,         // Espaciado elegante
+                color: celesteBlue,         // Nuevo tono celeste azulado
+              ),
+            ),
+          ],
         ),
-        centerTitle: true,
+        centerTitle: false,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: celesteBlue.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: celesteBlue.withOpacity(0.2)),
+                ),
+                child: const Text(
+                  "VERSION 2.0",
+                  style: TextStyle(
+                    color: celesteBlue, 
+                    fontSize: 10, 
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ),
+          )
+        ],
       ),
       body: BlocBuilder<ChatBloc, ChatState>(
         builder: (context, state) {
-          final currentBrawler = state.selectedBrawler;
-          final globalTrophies = state.totalGlobalTrophies;
+          final currentBrawler = (state is ChatLoaded) 
+              ? state.selectedBrawler 
+              : BrawlerRepository.availableBrawlers.first;
+              
+          final globalTrophies = (state is ChatLoaded) 
+              ? state.totalGlobalTrophies 
+              : 0;
 
-          return Padding(
-            padding: const EdgeInsets.all(20.0),
+          // Se obtiene dynamically el nombre según la cuenta registrada
+          final String username = (state is ChatLoaded) ? "jro" : "Player"; 
+
+          // Condicional por si en el futuro deseas renderizar un Widget de perfil completo aquí mismo
+          if (_currentIndex == 1) {
+            return const Center(
+              child: Text(
+                "SECCIÓN PERFIL // EN DESARROLLO",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+              ),
+            );
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 🏆 TARJETA DE PERFIL Y COPAS
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1F242C),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.amber.withOpacity(0.4), width: 2),
+                // ================= BIENVENIDA CONTEXTUAL =================
+                Text(
+                  "BIENVENIDO DE NUEVO, ",
+                  style: TextStyle(
+                    color: celesteBlue.withOpacity(0.6), 
+                    fontSize: 13, 
+                    fontWeight: FontWeight.w900, // Letra ancha
+                    letterSpacing: 2.0,
                   ),
-                  child: Row(
-                    children: [
-                      // Mini Avatar del brawler activo actual
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: currentBrawler.primaryColor, width: 2),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  username.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white, 
+                    fontSize: 32, 
+                    fontWeight: FontWeight.w900, // Letra ultra-gruesa
+                    letterSpacing: 2.5,         // Letras bien separadas como querías
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                // ================= CAJA PRINCIPAL BENTO: BRAWLER COMMAND CENTER =================
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const BrawlerSelectionScreen()),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(18),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF111827),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: celesteBlue.withOpacity(0.25)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: celesteBlue.withOpacity(0.03),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        )
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        // Avatar circular con el nuevo borde celeste
+                        Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: celesteBlue, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: celesteBlue.withOpacity(0.3),
+                                blurRadius: 8,
+                              )
+                            ],
+                          ),
+                          child: CircleAvatar(
+                            radius: 32,
+                            backgroundColor: const Color(0xFF060910),
+                            backgroundImage: AssetImage(currentBrawler.avatarAsset),
+                          ),
                         ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Image.asset(currentBrawler.avatarAsset, fit: BoxFit.contain),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Tutor Seleccionado: ${currentBrawler.name}",
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              "Total Trophies: $globalTrophies 🏆",
-                              style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w900, fontSize: 14),
-                            ),
-                          ],
+                        const SizedBox(width: 18),
+                        // Información de la progresión persistida
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "BRAWLER SELECCIONADO",
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.4), 
+                                  fontSize: 11, 
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                currentBrawler.name.toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white, 
+                                  fontSize: 22, 
+                                  fontWeight: FontWeight.w900, // Letra ancha
+                                  letterSpacing: 1.5,         // Letras bien separadas para el Brawler
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(Icons.emoji_events_rounded, color: Color(0xFFFACC15), size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    "$globalTrophies TROFEOS OBTENIDOS",
+                                    style: const TextStyle(
+                                      color: Color(0xFFFACC15), 
+                                      fontSize: 13, 
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      // Botón rápido para cambiar de brawler
-                      IconButton(
-                        icon: const Icon(Icons.swap_horiz, color: Colors.amber, size: 30),
-                        onPressed: () {
+                        Icon(Icons.swap_horiz_rounded, color: celesteBlue.withOpacity(0.7), size: 24),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 28),
+                
+                // Título de la sección de módulos
+                Text(
+                  "MODOS DE APRENDIZAJE",
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.3), 
+                    fontSize: 13, 
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // ================= PARRILLA BENTO ASIMÉTRICA =================
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // MÓDULO 1: AI CHAT TUTOR
+                    Expanded(
+                      flex: 45, 
+                      child: _buildBentoCard(
+                        title: "AI CHAT\nTUTOR",
+                        description: "Práctica de conversación fluida y feedback libre.",
+                        badgeText: "FREE TALK",
+                        icon: Icons.smart_toy_rounded, 
+                        accentColor: const Color(0xFF34C759), 
+                        celesteColor: celesteBlue,
+                        onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const BrawlerSelectionScreen()),
+                            MaterialPageRoute(builder: (context) => const ChatScreen()),
                           );
                         },
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 30),
-                
-                const Text(
-                  "SELECT GAME MODE",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1.2),
-                ),
-                const SizedBox(height: 16),
-
-                // 💬 MODO 1: FRIENDLY CHAT (Tu pantalla actual)
-                _buildMenuButton(
-                  context,
-                  title: "FRIENDLY CHAT",
-                  subtitle: "Practica inglés relajado con tu tutor",
-                  icon: Icons.chat_bubble,
-                  color: Colors.blueAccent.shade700,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const ChatScreen()),
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // ⚡ MODO 2: SHOWDOWN MODE (Próximamente)
-                _buildMenuButton(
-                  context,
-                  title: "🔥 SHOWDOWN MODE",
-                  subtitle: "Sobrevive a las preguntas rápidas y gana megacopas",
-                  icon: Icons.flash_on,
-                  color: const Color(0xFFC2410C),
-                  onTap: () {
-                    // 🌟 1. DISPARAR EL EVENTO DE INICIO: Le mandamos el brawler activo al Bloc
-                    context.read<ShowdownBloc>().add(StartShowdownMatchEvent(currentBrawler));
-
-                    // 🌟 2. MOSTRAR EL MENSAJE (Opcional, el que ya tienes)
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("¡Preparando la arena de Showdown...!"),
-                        duration: Duration(milliseconds: 800),
+                    ),
+                    const SizedBox(width: 14),
+                    
+                    // MÓDULO 2: MODO SHOWDOWN
+                    Expanded(
+                      flex: 55,
+                      child: _buildBentoCard(
+                        title: "MODO\nSHOWDOWN",
+                        description: "¡Arriesga, responde rápido y gana o pierde copas en tiempo real!",
+                        badgeText: "COMPETITIVE",
+                        icon: Icons.whatshot_rounded, 
+                        accentColor: const Color(0xFFFF453A), 
+                        celesteColor: celesteBlue,
+                        isHighlighted: true, 
+                        onTap: () async {
+                          context.read<ShowdownBloc>().add(StartShowdownMatchEvent(currentBrawler));
+                          final resultadoCopas = await Navigator.push<dynamic>(
+                            context,
+                            MaterialPageRoute(builder: (context) => ShowdownScreen(currentBrawler: currentBrawler)),
+                          );
+                          if (resultadoCopas != null && resultadoCopas is int) {
+                            context.read<ChatBloc>().add(RefreshGlobalTrophiesEvent(updatedTrophies: resultadoCopas));
+                          } else {
+                            context.read<ChatBloc>().add(RefreshGlobalTrophiesEvent(updatedTrophies: -5));
+                          }
+                        },
                       ),
-                    );
-
-                    // 🌟 3. NAVEGAR A LA PANTALLA
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ShowdownScreen(currentBrawler: currentBrawler),
-                      ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ],
             ),
           );
         },
       ),
+      
+      // ================= NAV BAR INFERIOR ADICIONADA =================
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: celesteBlue.withOpacity(0.15), // Línea divisoria ciberpunk superior
+              width: 1.0,
+            ),
+          ),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          backgroundColor: const Color(0xFF060910), // Fondo a juego con el Scaffold
+          selectedItemColor: celesteBlue, // Color encendido para el icono activo
+          unselectedItemColor: Colors.white.withOpacity(0.35), // Color apagado
+          selectedFontSize: 12,
+          unselectedFontSize: 12,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
+          type: BottomNavigationBarType.fixed, // Evita animaciones raras que muevan el Bento Layout
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_filled, size: 24),
+              label: 'Hogar',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_rounded, size: 24),
+              label: 'Perfil',
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildMenuButton(
-    BuildContext context, {
+  // Widget Constructor Bento Grid 
+  Widget _buildBentoCard({
     required String title,
-    required String subtitle,
+    required String description,
+    required String badgeText,
     required IconData icon,
-    required Color color,
+    required Color accentColor,
+    required Color celesteColor,
     required VoidCallback onTap,
+    bool isHighlighted = false,
   }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        height: 210, 
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: const Color(0xFF1F242C),
+          color: const Color(0xFF111827),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.5), width: 2),
-          boxShadow: [
-            BoxShadow(color: color.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
-          ],
+          border: Border.all(
+            color: isHighlighted 
+                ? celesteColor.withOpacity(0.4) 
+                : Colors.white.withOpacity(0.05),
+            width: isHighlighted ? 1.5 : 1.0,
+          ),
+          boxShadow: isHighlighted ? [
+            BoxShadow(
+              color: celesteColor.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ] : null,
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(icon, color: color, size: 40),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(color: Colors.white60, fontSize: 12),
+                  child: Icon(icon, color: accentColor, size: 20),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.03),
+                    borderRadius: BorderRadius.circular(5),
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
                   ),
-                ],
-              ),
+                  child: Text(
+                    badgeText,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.3), 
+                      fontSize: 9, 
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 16),
+            const SizedBox(height: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white, 
+                    fontSize: 16, 
+                    fontWeight: FontWeight.w900, 
+                    height: 1.2,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  description,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.4), 
+                    fontSize: 12, 
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

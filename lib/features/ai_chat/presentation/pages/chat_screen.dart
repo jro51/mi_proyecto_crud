@@ -279,7 +279,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     // --- Barra de entrada inferior ---
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
-                      color: const Color(0xFF090F16),
+                      color: const Color(0xFF0D1520),
                       child: Row(
                         children: [
                           StatefulBuilder(

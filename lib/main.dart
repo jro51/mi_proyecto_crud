@@ -69,7 +69,7 @@ void main() async { // 🌟 Convertido a async para cargar los assets iniciales
           ),
           // ⚔️ Arena de Combate Showdown
           BlocProvider<ShowdownBloc>(
-            create: (context) => ShowdownBloc(showdownRepository),
+            create: (context) => ShowdownBloc(showdownRepository, storageService),
           ),
         ],
         child: const BrawlAcademyApp(),

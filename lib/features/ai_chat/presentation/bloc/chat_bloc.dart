@@ -3,6 +3,8 @@ import 'package:mi_proyecto_crud/features/ai_chat/data/voice_service.dart';
 import 'package:mi_proyecto_crud/features/profile/data/brawler_repository.dart';
 import 'package:mi_proyecto_crud/features/profile/data/models/brawler_model.dart';
 import '../../data/models/chat_message_model.dart';
+import 'dart:convert'; // 👈 Asegúrate de tener este import arriba para el jsonDecode
+import 'package:http/http.dart' as http; // 👈 Si usas http
 
 // 🌟 CORREGIDO: Importamos la interfaz abstracta, no la implementación directa
 import '../../domain/repositories/chat_repository.dart'; 
@@ -32,6 +34,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ClearChatEvent>(_onClearChat);
     on<TogglePanicEvent>(_onTogglePanic);
     on<ChangeBrawlerEvent>(_onChangeBrawler);
+    on<RefreshGlobalTrophiesEvent>(_onRefreshGlobalTrophies);
   }
 
   Future<void> _onSendMessage(SendMessageEvent event, Emitter<ChatState> emit) async {
@@ -69,8 +72,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       if (aiResponse.challengeEvaluations != null) {
         _currentChallenges = _currentChallenges.map((challenge) {
-          final isCompletedNow = aiResponse.challengeEvaluations![challenge.id] ?? challenge.isCompleted;
-          return challenge.copyWith(isCompleted: isCompletedNow);
+          // ✅ Si ya estaba completado, se mantiene. Si Gemini lo marcó true ahora, se activa.
+          // Nunca se puede "descompletar" un reto ya logrado.
+          final completedByAi = aiResponse.challengeEvaluations![challenge.id] ?? false;
+          final isNowCompleted = challenge.isCompleted || completedByAi;
+          return challenge.copyWith(isCompleted: isNowCompleted);
         }).toList();
       }
 
@@ -157,4 +163,66 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       totalGlobalTrophies: _totalGlobalTrophies,
     ));
   }
+
+  Future<void> _onRefreshGlobalTrophies(
+    RefreshGlobalTrophiesEvent event, 
+    Emitter<ChatState> emit
+  ) async {
+    
+    // 🚀 IMPORTANTE: Cambia el ID '1' por el ID del usuario logueado en tu App
+    final String urlUser = "http://10.0.2.2:8080/api/users/1"; 
+    final String urlShowdown = "http://10.0.2.2:8080/api/showdown/round";
+
+    try {
+      // 1️⃣ Si venimos de Showdown con un resultado ('victory', 'defeat' o 'abandon')
+      if (event.updatedTrophies != null) {
+        // Calculamos cuántas copas sumamos o restamos
+        int copasCambio = 0;
+        if (event.updatedTrophies == 15) copasCambio = 15;  // Victoria
+        if (event.updatedTrophies == -5) copasCambio = -5;  // Derrota o Abandono
+
+        // Notificamos al backend para que actualice en MySQL
+        // (Ajusta el body de este POST según lo que reciba tu 'PlayRoundRequest' en Spring Boot)
+        await http.post(
+          Uri.parse(urlShowdown),
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({
+            "userId": 1, 
+            "copasCambio": copasCambio
+          }),
+        );
+      }
+
+      // 2️⃣ Sincronización Automática: Consultamos las copas reales a tu UserController
+      final response = await http.get(Uri.parse(urlUser));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        // 🌟 CORREGIDO: Mapeamos usando exactamente 'globalTrophies' de tu Record de Java
+        _totalGlobalTrophies = data['globalTrophies'] ?? 0; 
+        print("Sincronizado con MySQL con éxito. Copas actuales: $_totalGlobalTrophies");
+      }
+
+    } catch (e) {
+      print("⚠️ Error de comunicación con Spring Boot: $e");
+      
+      // Fallback local por si estás testeando sin servidor encendido:
+      if (event.updatedTrophies != null) {
+        _totalGlobalTrophies += event.updatedTrophies!;
+        if (_totalGlobalTrophies < 0) _totalGlobalTrophies = 0;
+      }
+    }
+
+    // Emitimos el estado con la data en tiempo real
+    emit(ChatLoaded(
+      List.from(_history),
+      confidenceScore: _currentScore,
+      activeChallenges: _currentChallenges,
+      selectedBrawler: _currentBrawler,
+      brawlersProgress: _brawlersList,
+      totalGlobalTrophies: _totalGlobalTrophies, 
+    ));
+  }
+
 }
