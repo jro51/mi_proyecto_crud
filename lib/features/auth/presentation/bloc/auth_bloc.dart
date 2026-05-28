@@ -20,7 +20,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _onAuthCheckRequested(AuthCheckRequested event, Emitter<AuthState> emit) async {
     final isAuthenticated = await _authRepository.checkAuthStatus();
     if (isAuthenticated) {
-      emit(Authenticated());
+      final username = await _authRepository.getAuthenticatedUsername() ?? 'Usuario';
+      
+      // 🌟 Extraemos el ID numérico guardado (si tu repo devuelve String, conviértelo a int)
+      final userIdStr = await _authRepository.getAuthenticatedUserId() ?? '0';
+      final userId = int.tryParse(userIdStr) ?? 0;
+      
+      // ✅ Enviamos nombre e ID al estado
+      emit(Authenticated(username: username, userId: userId)); 
     } else {
       emit(Unauthenticated());
     }
@@ -29,9 +36,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _onLoginSubmitted(LoginSubmitted event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     try {
-      await _authRepository.login(username: event.username, password: event.password);
-      emit(Authenticated());
-    } catch (e) {
+      // 🌟 Obtenemos los datos devueltos directamente del inicio de sesión
+      final authData = await _authRepository.login(username: event.username, password: event.password);
+      
+      final username = authData['username'] as String;
+      final userId = authData['userId'] as int;
+      
+      // ✅ Emitimos el estado con los datos en mano sin tocar el storage
+      emit(Authenticated(username: username, userId: userId)); 
+    } catch (e, stackTrace) {
+      print("🚨 ERROR EN AUTH_BLOC LOGIN: $e");
+      print("📌 STACKTRACE: $stackTrace");
       emit(AuthFailure(errorMessage: e.toString().replaceAll('Exception: ', '')));
     }
   }
@@ -39,8 +54,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _onRegisterSubmitted(RegisterSubmitted event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     try {
-      await _authRepository.register(username: event.username, password: event.password);
-      emit(Authenticated());
+      // 🌟 Obtenemos los datos devueltos directamente del registro
+      final authData = await _authRepository.register(username: event.username, password: event.password);
+      
+      final username = authData['username'] as String;
+      final userId = authData['userId'] as int;
+      
+      // ✅ Emitimos el estado sin congelamientos
+      emit(Authenticated(username: username, userId: userId)); 
     } catch (e) {
       emit(AuthFailure(errorMessage: e.toString().replaceAll('Exception: ', '')));
     }

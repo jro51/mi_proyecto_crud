@@ -25,6 +25,8 @@ import 'package:mi_proyecto_crud/features/ai_chat/presentation/bloc/showdown/sho
 
 // Importaciones de tus pantallas existentes
 import 'package:mi_proyecto_crud/features/ai_chat/presentation/pages/main_menu_screen.dart';
+import 'package:mi_proyecto_crud/features/profile/bloc/profile_bloc.dart';
+import 'package:mi_proyecto_crud/features/users/data/repositories/user_repository_impl.dart';
 
 void main() async { // 🌟 Convertido a async para cargar los assets iniciales
   // 💡 POR QUÉ: Asegura que los canales nativos de Flutter estén listos antes de arrancar.
@@ -40,6 +42,11 @@ void main() async { // 🌟 Convertido a async para cargar los assets iniciales
   // 1. Inicializamos los servicios del Core de forma única (Singletons manuales)
   final storageService = StorageService();
   final httpClient = HttpClient(storageService: storageService);
+
+  final userRepository = UserRepositoryImpl(
+    httpClient: httpClient,
+    storageService: storageService,
+  );
 
   // 2. Inicializamos las implementaciones de los repositorios
   final authRepository = AuthRepositoryImpl(
@@ -65,11 +72,14 @@ void main() async { // 🌟 Convertido a async para cargar los assets iniciales
           ),
           // 💬 Chat de aprendizaje y Trophy Road
           BlocProvider<ChatBloc>(
-            create: (context) => ChatBloc(chatRepository)..add(ClearChatEvent()), 
+            create: (context) => ChatBloc(chatRepository, userRepository)..add(ClearChatEvent()), 
           ),
           // ⚔️ Arena de Combate Showdown
           BlocProvider<ShowdownBloc>(
             create: (context) => ShowdownBloc(showdownRepository, storageService),
+          ),
+          BlocProvider<ProfileBloc>(
+            create: (context) => ProfileBloc(userRepository), // Pásale tu UserRepositoryImpl
           ),
         ],
         child: const BrawlAcademyApp(),

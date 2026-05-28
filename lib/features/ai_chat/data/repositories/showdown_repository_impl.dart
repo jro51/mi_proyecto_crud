@@ -16,16 +16,22 @@ class ShowdownRepositoryImpl {
     required int currentRound,
   }) async {
     try {
+      // 📦 Aseguramos que el mapa JSON coincida exactamente con las variables de PlayRoundRequest en Java
+      final Map<String, dynamic> requestData = {
+        'userId': userId, // Pasa como entero nativo de Dart, idéntico al Long de Java
+        'brawlerName': brawlerName,
+        'userAnswer': userAnswer,
+        'currentHp': currentHp,
+        'currentPowerCubes': currentPowerCubes,
+        'currentRound': currentRound,
+      };
+
+      // 📝 Log local para que verifiques en tu consola qué ID y qué datos están saliendo
+      print("🚀 ENVIANDO AL SHOWDOWN: $requestData");
+
       final response = await _httpClient.client.post(
         '/showdown/round',
-        data: {
-          'userId': userId,
-          'brawlerName': brawlerName,
-          'userAnswer': userAnswer,
-          'currentHp': currentHp,
-          'currentPowerCubes': currentPowerCubes,
-          'currentRound': currentRound,
-        },
+        data: requestData,
       );
 
       if (response.statusCode == 200) {
@@ -34,9 +40,11 @@ class ShowdownRepositoryImpl {
         throw Exception('Error inesperado del servidor en el Showdown');
       }
     } on DioException catch (e) {
-      // Ahora el backend devuelve JSON con campo 'message'
+      // 🚨 Si el servidor responde 400, aquí leeremos el mensaje real que Jackson o Spring arrojan
+      print("🚨 DETALLES DEL ERROR 400 EN DIO: ${e.response?.data}");
+      
       final errorMessage = e.response?.data is Map
-          ? e.response?.data['message'] ?? 'Error de conexión con el coliseo'
+          ? e.response?.data['message'] ?? 'Error de formato en los datos enviados'
           : 'Error de conexión con el coliseo';
       throw Exception(errorMessage);
     }

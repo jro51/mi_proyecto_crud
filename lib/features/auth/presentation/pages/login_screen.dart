@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mi_proyecto_crud/features/ai_chat/presentation/pages/main_menu_screen.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+// 🌟 IMPORTANTE: Asegúrate de importar tu menú principal aquí
+// Si está en otra ruta, adapta este import para que apunte a tu MainMenuScreen
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,13 +52,21 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: const Color(0xFF1E1E24), 
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-          // 💡 SOLUCIONADO: Corregido el "state declaration is" a "state is"
           if (state is AuthFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.errorMessage),
                 backgroundColor: Colors.redAccent,
               ),
+            );
+          }
+
+          // 🌟 ¡LA PIEZA MAESTRA! Cuando el estado pase a Authenticated, cambiamos de pantalla
+          if (state is Authenticated) {
+            Navigator.of(context).pushAndRemoveUntil(
+              // Si tu pantalla del menú principal tiene otro nombre, cámbialo aquí:
+              MaterialPageRoute(builder: (context) => const MainMenuScreen()),
+              (route) => false,
             );
           }
         },
@@ -68,7 +79,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // 👑 LOGO O TÍTULO TEMÁTICO
-                  // 💡 SOLUCIONADO: Cambiado FontWeight.black a FontWeight.w900 para mantener el const
                   const Text(
                     'BRAWL',
                     style: TextStyle(

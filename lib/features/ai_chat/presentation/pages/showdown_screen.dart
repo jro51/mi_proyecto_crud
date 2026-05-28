@@ -22,8 +22,6 @@ class _ShowdownScreenState extends State<ShowdownScreen> {
   @override
   void initState() {
     super.initState();
-    // 🌟 Disparamos el evento para iniciar la cuenta regresiva al entrar
-    context.read<ShowdownBloc>().add(StartShowdownMatchEvent(widget.currentBrawler));
   }
 
   void _scrollToBottom() {

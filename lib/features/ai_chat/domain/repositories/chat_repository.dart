@@ -1,4 +1,3 @@
-import 'package:mi_proyecto_crud/features/profile/data/models/user_model.dart';
 
 import '../../data/models/chat_message_model.dart';
 
@@ -7,5 +6,4 @@ abstract class ChatRepository {
   // y retorna la respuesta procesada de la IA.
   Future<ChatMessageModel> sendMessage(List<ChatMessageModel> history, String userMessage);
 
-  Future<UserModel> getUserProfile();
 }

@@ -4,7 +4,10 @@ import 'package:mi_proyecto_crud/features/ai_chat/presentation/bloc/chat_event.d
 import 'package:mi_proyecto_crud/features/ai_chat/presentation/bloc/showdown/showdown_bloc.dart';
 import 'package:mi_proyecto_crud/features/ai_chat/presentation/bloc/showdown/showdown_event.dart';
 import 'package:mi_proyecto_crud/features/ai_chat/presentation/pages/showdown_screen.dart';
+import 'package:mi_proyecto_crud/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:mi_proyecto_crud/features/auth/presentation/bloc/auth_state.dart';
 import 'package:mi_proyecto_crud/features/profile/data/brawler_repository.dart';
+import 'package:mi_proyecto_crud/features/profile/presentation/pages/profile_screen.dart';
 import '../bloc/chat_bloc.dart';
 import '../bloc/chat_state.dart';
 import 'chat_screen.dart';
@@ -18,19 +21,31 @@ class MainMenuScreen extends StatefulWidget {
 }
 
 class _MainMenuScreenState extends State<MainMenuScreen> {
-  // Índice actual para controlar qué sección está seleccionada
   int _currentIndex = 0;
 
   @override
-  Widget build(BuildContext context) {
-    // Sincronización con el backend de Spring Boot
+  void initState() {
+    super.initState();
+    // ✅ Hecho correctamente: Sincronizamos con Spring Boot SOLO una vez al iniciar la pantalla
     context.read<ChatBloc>().add(RefreshGlobalTrophiesEvent());
+  }
 
-    // Color base: Celeste que tira para azul (idéntico al nuevo diseño del PDF)
+  @override
+  Widget build(BuildContext context) {
     const Color celesteBlue = Color.fromARGB(255, 83, 149, 247);
 
+    // 🌟 Leemos el estado actual del AuthBloc de forma reactiva
+    final authState = context.watch<AuthBloc>().state;
+    String nombreUsuario = "JUGADOR";
+    int userIdReal = 0; 
+
+    if (authState is Authenticated) {
+      nombreUsuario = authState.username.toUpperCase();
+      userIdReal = authState.userId;
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xFF060910), // Fondo azul oscuro profundo
+      backgroundColor: const Color(0xFF060910), 
       appBar: AppBar(
         backgroundColor: const Color(0xFF060910),
         elevation: 0,
@@ -42,9 +57,9 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
               "BRAWL ACADEMY",
               style: TextStyle(
                 fontSize: 24,
-                fontWeight: FontWeight.w900, // Letra más ancha/gruesa
-                letterSpacing: 3,         // Espaciado elegante
-                color: celesteBlue,         // Nuevo tono celeste azulado
+                fontWeight: FontWeight.w900,
+                letterSpacing: 3,
+                color: celesteBlue,
               ),
             ),
           ],
@@ -85,17 +100,10 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
               ? state.totalGlobalTrophies 
               : 0;
 
-          // Se obtiene dynamically el nombre según la cuenta registrada
-          final String username = (state is ChatLoaded) ? "jro" : "Player"; 
+          // 🗑️ Se eliminó la línea duplicada que forzaba el "jro" en texto plano
 
-          // Condicional por si en el futuro deseas renderizar un Widget de perfil completo aquí mismo
           if (_currentIndex == 1) {
-            return const Center(
-              child: Text(
-                "SECCIÓN PERFIL // EN DESARROLLO",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.5),
-              ),
-            );
+            return ProfileScreen(userId: userIdReal);
           }
 
           return SingleChildScrollView(
@@ -109,18 +117,18 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                   style: TextStyle(
                     color: celesteBlue.withOpacity(0.6), 
                     fontSize: 13, 
-                    fontWeight: FontWeight.w900, // Letra ancha
+                    fontWeight: FontWeight.w900, 
                     letterSpacing: 2.0,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  username.toUpperCase(),
+                  nombreUsuario, // 🌟 Renderiza impecable el estado del AuthBloc sin hardcodeos
                   style: const TextStyle(
                     color: Colors.white, 
                     fontSize: 32, 
-                    fontWeight: FontWeight.w900, // Letra ultra-gruesa
-                    letterSpacing: 2.5,         // Letras bien separadas como querías
+                    fontWeight: FontWeight.w900, 
+                    letterSpacing: 2.5,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -151,7 +159,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                     ),
                     child: Row(
                       children: [
-                        // Avatar circular con el nuevo borde celeste
                         Container(
                           padding: const EdgeInsets.all(3),
                           decoration: BoxDecoration(
@@ -171,7 +178,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                           ),
                         ),
                         const SizedBox(width: 18),
-                        // Información de la progresión persistida
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,8 +197,8 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                                 style: const TextStyle(
                                   color: Colors.white, 
                                   fontSize: 22, 
-                                  fontWeight: FontWeight.w900, // Letra ancha
-                                  letterSpacing: 1.5,         // Letras bien separadas para el Brawler
+                                  fontWeight: FontWeight.w900, 
+                                  letterSpacing: 1.5,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -221,7 +227,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                 ),
                 const SizedBox(height: 28),
                 
-                // Título de la sección de módulos
                 Text(
                   "MODOS DE APRENDIZAJE",
                   style: TextStyle(
@@ -237,7 +242,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // MÓDULO 1: AI CHAT TUTOR
                     Expanded(
                       flex: 45, 
                       child: _buildBentoCard(
@@ -257,7 +261,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                     ),
                     const SizedBox(width: 14),
                     
-                    // MÓDULO 2: MODO SHOWDOWN
                     Expanded(
                       flex: 55,
                       child: _buildBentoCard(
@@ -290,12 +293,11 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
         },
       ),
       
-      // ================= NAV BAR INFERIOR ADICIONADA =================
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           border: Border(
             top: BorderSide(
-              color: celesteBlue.withOpacity(0.15), // Línea divisoria ciberpunk superior
+              color: celesteBlue.withOpacity(0.15), 
               width: 1.0,
             ),
           ),
@@ -307,14 +309,14 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
               _currentIndex = index;
             });
           },
-          backgroundColor: const Color(0xFF060910), // Fondo a juego con el Scaffold
-          selectedItemColor: celesteBlue, // Color encendido para el icono activo
-          unselectedItemColor: Colors.white.withOpacity(0.35), // Color apagado
+          backgroundColor: const Color(0xFF060910), 
+          selectedItemColor: celesteBlue, 
+          unselectedItemColor: Colors.white.withOpacity(0.35), 
           selectedFontSize: 12,
           unselectedFontSize: 12,
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
-          type: BottomNavigationBarType.fixed, // Evita animaciones raras que muevan el Bento Layout
+          type: BottomNavigationBarType.fixed, 
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_filled, size: 24),
@@ -330,7 +332,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     );
   }
 
-  // Widget Constructor Bento Grid 
   Widget _buildBentoCard({
     required String title,
     required String description,

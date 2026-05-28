@@ -14,9 +14,9 @@ class AuthRepositoryImpl implements AuthRepository {
         _storageService = storageService;
 
   @override
-  Future<void> login({required String username, required String password}) async {
+  Future<Map<String, dynamic>> login({required String username, required String password}) async {
     try {
-      // Hacemos la petición POST al endpoint público del backend.
+      print("🚀 ENVIANDO PETICIÓN POST A /auth/login CON EL CLIENTE DIO...");
       final response = await _httpClient.client.post(
         '/auth/login',
         data: {
@@ -25,24 +25,51 @@ class AuthRepositoryImpl implements AuthRepository {
         },
       );
 
-      // Si el servidor responde con éxito (200), extraemos los datos
-      if (response.statusCode == 200) {
-        final data = response.data as Map<String, dynamic>;
-        final token = data['token'] as String;
-        final userId = data['userId'] as int;
+      print("✅ RESPUESTA DEL BACKEND RECIBIDA: ${response.statusCode}");
 
-        // Guardamos los datos de manera cifrada en el llavero del celular.
-        await _storageService.saveAuthData(token: token, userId: userId);
+      if (response.statusCode == 200) {
+        print("🔍 ANALIZANDO JSON RECIBIDO: ${response.data}");
+        
+        final data = response.data as Map<String, dynamic>;
+        print("1️⃣ JSON mapeado correctamente.");
+
+        final token = data['token'] as String;
+        print("2️⃣ Token extraído: $token");
+
+        // Cambiamos a una conversión ultra-segura por si el ID viene nulo o con otro formato
+        final userId = data['userId'] != null ? (data['userId'] as num).toInt() : 0;
+        print("3️⃣ ID de usuario procesado: $userId");
+
+        final returnedUsername = data['username'] as String? ?? username; 
+        print("4️⃣ Username procesado: $returnedUsername");
+
+        print("💾 Intentando guardar datos en FlutterSecureStorage...");
+        await _storageService.saveAuthData(
+          token: token, 
+          userId: userId, 
+          username: returnedUsername,
+        );
+        print("💾 ¡Guardado exitoso en el Storage!");
+
+        return {
+          'userId': userId,
+          'username': returnedUsername,
+        };
       }
+      throw Exception('Error en la respuesta del servidor');
     } on DioException catch (e) {
-      // Capturamos el error controlado que mandamos desde Spring Boot (BusinessException)
+      print("🚨 DIO EXCEPTION EN REPOSITORIO: ${e.message}");
       final errorMessage = e.response?.data['message'] ?? 'Error al iniciar sesión';
       throw Exception(errorMessage);
+    } catch (e, stack) {
+      print("🚨 ERROR GENERAL EN REPOSITORIO: $e");
+      print("📌 STACK: $stack");
+      rethrow;
     }
   }
 
   @override
-  Future<void> register({required String username, required String password}) async {
+  Future<Map<String, dynamic>> register({required String username, required String password}) async {
     try {
       final response = await _httpClient.client.post(
         '/auth/register',
@@ -55,10 +82,23 @@ class AuthRepositoryImpl implements AuthRepository {
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
         final token = data['token'] as String;
-        final userId = data['userId'] as int;
+        final userId = (data['userId'] as num).toInt();
+        final returnedUsername = data['username'] as String? ?? username;
 
-        await _storageService.saveAuthData(token: token, userId: userId);
+        // Guardamos en segundo plano
+        await _storageService.saveAuthData(
+          token: token, 
+          userId: userId, 
+          username: returnedUsername,
+        );
+
+        // 🌟 DEVOLVEMOS LOS DATOS DIRECTAMENTE
+        return {
+          'userId': userId,
+          'username': returnedUsername,
+        };
       }
+      throw Exception('Error en la respuesta del servidor');
     } on DioException catch (e) {
       final errorMessage = e.response?.data['message'] ?? 'Error al registrar usuario';
       throw Exception(errorMessage);
@@ -75,5 +115,15 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> logout() async {
     await _storageService.clearAuthData();
+  }
+
+  @override
+  Future<String?> getAuthenticatedUsername() async {
+    return await _storageService.getUsername();
+  }
+
+  @override
+  Future<String?> getAuthenticatedUserId() async {
+    return await _storageService.getUserId();
   }
 }

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:mi_proyecto_crud/core/services/storage_service.dart';
 
 class HttpClient {
@@ -33,7 +34,7 @@ class HttpClient {
           return handler.next(options);
         },
         onError: (DioException e, handler) {
-          print('🚨 Error en la petición HTTP [${e.response?.statusCode}]: ${e.message}');
+          debugPrint('🚨 Error en la petición HTTP [${e.response?.statusCode}]: ${e.message}');
           return handler.next(e);
         },
       ),
